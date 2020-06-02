@@ -1,0 +1,12 @@
+name: charm-slurmdbd
+summary: Describe your charm here
+maintainers:
+    - Jesse <jesse@omnivector.solutions>
+description: |
+    A nice long description of what the product does and any
+    high level information about how the charm provides the product,
+    on which platform, etc.
+tags:
+    - slurm
+series:
+    - focal
