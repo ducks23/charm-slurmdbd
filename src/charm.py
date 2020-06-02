@@ -6,8 +6,6 @@ sys.path.append('lib')
 
 from ops.charm import CharmBase
 
-from ops.framework import StoredState
-
 from ops.main import main
 
 
