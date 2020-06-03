@@ -19,8 +19,9 @@ class SlurmSnapOps():
         try:
             resource = subprocess.check_output(['resource-get', 'slurm'])
             resource = resource.decode().strip()
-        except Exception as e:
-            logger.info(e)
+        except subprocess.CalledProcessError as e:
+            logger.error("Resource could not be found when executing: {}".format(e), exc_info=True)
+
 
         if len(resource) > 0:
             # resource found
@@ -29,6 +30,7 @@ class SlurmSnapOps():
             cmd.append("--classic")
         else:
             # resource NOT found
+            logger.info("installing from the snap store")
             cmd.append("slurm")
             cmd.append("--edge")
             
