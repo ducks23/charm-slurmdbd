@@ -25,9 +25,9 @@ class SlurmSnapOps():
 
         if len(resource) > 0:
             # resource found
+            logger.info(f'the resource and path we are trying to install: {resource}')
             cmd.append(resource)
             cmd.append("--dangerous")
-            cmd.append("--classic")
         else:
             # resource NOT found
             logger.info("installing from the snap store")
