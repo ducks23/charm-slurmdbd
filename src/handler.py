@@ -14,29 +14,31 @@ class SlurmSnapOps():
     def install(self):
         cmd = ["snap", "install"]
         resource_found = True
-        
+        resource = ""
         #checks to see if resource is supplied locally
         try:
             resource = subprocess.check_output(['resource-get', 'slurm'])
             resource = resource.decode().strip()
-        except:
-            resource_found = False
-            logger.info("couldn't find snap locally")
-        
-        if resource_found is True:
+        except subprocess.CalledProcessError as e:
+            logger.error("Resource could not be found when executing: {}".format(e), exc_info=True)
+
+
+        if len(resource) > 0:
+            # resource found
+            logger.info(f'the resource and path we are trying to install: {resource}')
             cmd.append(resource)
             cmd.append("--dangerous")
-            cmd.append("--classic")
-
-        #installs from the snap store
         else:
+            # resource NOT found
+            logger.info("installing from the snap store")
             cmd.append("slurm")
             cmd.append("--edge")
-
+            
         subprocess.call(cmd)
         subprocess.call(["snap", "connect", "slurm:network-control"])
         subprocess.call(["snap", "connect", "slurm:system-observe"])
         subprocess.call(["snap", "connect", "slurm:hardware-observe"])
+        
 
     def render_config(self, source, target, context):
         """Render the context into the source template and write

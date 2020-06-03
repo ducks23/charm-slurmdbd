@@ -10,3 +10,8 @@ tags:
     - slurm
 series:
     - focal
+resources:
+  slurm:
+    type: file
+    filename: slurm.snap
+    description: slurm snap
