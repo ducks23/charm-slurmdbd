@@ -23,12 +23,12 @@ class SlurmSnapOps():
             logger.info(e)
 
         if len(resource) > 0:
-            logger.info("_____resource is found__________")
+            # resource found
             cmd.append(resource)
             cmd.append("--dangerous")
             cmd.append("--classic")
         else:
-            logger.info("_____resource NOT found__________")
+            # resource NOT found
             cmd.append("slurm")
             cmd.append("--edge")
             
