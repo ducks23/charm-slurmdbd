@@ -12,21 +12,17 @@ from ops.main import main
 
 from ops.model import ActiveStatus
 
-from ops.framework import StoredState
-
 from interface_mysql import MySQLClient
 
 
 class SlurmdbdCharm(CharmBase):
     
-    _stored.set_default(db_info=dict())
-
     def __init__(self, *args):
         super().__init__(*args)
         
         # to do:
         # clean this up with framework adapter :)
-
+        # implement the control states of the charm
         self.db = MySQLClient(self, "db")
         self.framework.observe(
                 self.db.on.database_available,
@@ -34,6 +30,7 @@ class SlurmdbdCharm(CharmBase):
         )
         self.framework.observe(self.on.install, self.on_install)
         self.framework.observe(self.on.start, self.on_start)
+
     #need to set off hooks in this order
     #1
     def on_install(self, event):
