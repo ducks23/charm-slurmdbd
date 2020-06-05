@@ -25,9 +25,6 @@ class SlurmdbdCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         
-        # to do:
-        # clean this up with framework adapter :)
-        
         self.db = MySQLClient(self, "db")
         self.framework.observe(
                 self.db.on.database_available,
@@ -42,7 +39,8 @@ class SlurmdbdCharm(CharmBase):
     #need to set off hooks in this order
     #1
     def on_install(self, event):
-        handle_snap_install()
+        handle_snap_install("--edge")
+        snap_connect()
         self.unit.status = ActiveStatus("snap installed")
 
     #2
@@ -67,28 +65,44 @@ def handle_snap_mode(snap_mode):
         command = f"snap.mode={snap_mode}"
         subprocess.call(["snap", "set", "slurm", command])
 
-def handle_snap_install():
-    """
-    checks if slurm snap is supplied as a resouce else installs the from snap store"
-    """
+
+def snap_connect(slot=None):
+    connect_commands = [
+        ["snap", "connect", "slurm:network-control"],
+        ["snap", "connect", "slurm:system-observe"],
+        ["snap", "connect", "slurm:hardware-observe"],
+    ]
+    
+    for connect_command in connect_commands:
+        if slot:
+            connect_command.append(slot)
+        try:
+            subprocess.call(connect_command)
+        except subprocess.CalledProcessError as e:
+            logger.error("Could not connect snap interface: {}".format(e), exc_info=True)
+
+
+def handle_snap_install(channel="--edge"):
     resource = ""
     try:
         resource = subprocess.check_output(['resource-get', 'slurm'])
         resource = resource.decode().strip()
     except subprocess.CalledProcessError as e:
-        logger.error("Resource could not be found when executing: {}".format(e), exc_info=True)
-
-    if len(resource) > 0:
-        cmd = ["snap", "install"]
-        cmd.append(resource)
-        cmd.append("--dangerous")
+        logger.error(f"Resource could not be found when executing: {e}", exc_info=True)
+    
+    # Create the snap install command.
+    snap_install_cmd = ["snap", "install"]
+    if Path(resource).exists() and os.stat(resource).st_size != 0:
+        snap_install_cmd.append(resource)
+        snap_install_cmd.append("--dangerous")
     else:
-        cmd = "snap install --edge".split()
-
-    subprocess.call(cmd)
-    subprocess.call(["snap", "connect", "slurm:network-control"])
-    subprocess.call(["snap", "connect", "slurm:system-observe"])
-    subprocess.call(["snap", "connect", "slurm:hardware-observe"])
+        snap_install_cmd.append("slurm")
+        snap_install_cmd.append(channel)
+    # Execute the snap install command.
+    try:
+        subprocess.call(snap_install_cmd)
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Could not install the slurm snap using the command: {e}", exc_info=True)
 
 
 def handle_config(event):
