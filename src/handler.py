@@ -12,10 +12,10 @@ logger = logging.getLogger()
 class SlurmSnapOps():
 
     def install(self):
-        cmd = ["snap", "install"]
-        resource_found = True
+        """
+        checks if slurm snap is supplied as a resouce else installs the from snap store"
+        """
         resource = ""
-        #checks to see if resource is supplied locally
         try:
             resource = subprocess.check_output(['resource-get', 'slurm'])
             resource = resource.decode().strip()
@@ -24,15 +24,11 @@ class SlurmSnapOps():
 
 
         if len(resource) > 0:
-            # resource found
-            logger.info(f'the resource and path we are trying to install: {resource}')
+            cmd = ["snap", "install"] 
             cmd.append(resource)
             cmd.append("--dangerous")
         else:
-            # resource NOT found
-            logger.info("installing from the snap store")
-            cmd.append("slurm")
-            cmd.append("--edge")
+
             
         subprocess.call(cmd)
         subprocess.call(["snap", "connect", "slurm:network-control"])
