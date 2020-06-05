@@ -27,7 +27,7 @@ class SlurmdbdCharm(CharmBase):
         
         # to do:
         # clean this up with framework adapter :)
-        # implement the control states of the charm
+        
         self.db = MySQLClient(self, "db")
         self.framework.observe(
                 self.db.on.database_available,
@@ -54,7 +54,7 @@ class SlurmdbdCharm(CharmBase):
     #3
     def on_start(self, event):
         if not self.state.configured:
-            logger.info("deferred config not set yet__________")
+            logger.info("deferred config not rendered")
             event.defer()
             return
         else:
