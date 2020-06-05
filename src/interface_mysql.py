@@ -75,13 +75,6 @@ class MySQLClient(Object):
 
 
     def _on_relation_changed(self, event):
-        """This method retrieves the value for 'foo'
-        (set by the provides side of the relation) from the
-        event.relation.data on the relation-changed hook event.
-        """
-        # Retrieve and log the value for 'foo' if it exists in
-        # the relation data.
-
         while not event.relation.data.get(event.unit, None):
             sleep(1)
             logger.info("Waiting on mysql relation data")
