@@ -8,8 +8,14 @@ description: |
     on which platform, etc.
 tags:
     - slurm
+
 series:
     - focal
+
+requires:
+  db:
+    interface: mysql
+
 resources:
   slurm:
     type: file
