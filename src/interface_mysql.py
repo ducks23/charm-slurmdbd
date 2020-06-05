@@ -32,8 +32,6 @@ class DatabaseAvailableEvent(EventBase):
 class DatabaseEvents(ObjectEvents):
     database_available = EventSource(DatabaseAvailableEvent)
 
-
-
 class MySQLClient(Object):
     """This class defines the functionality for the 'requires'
     side of the 'foo' relation.

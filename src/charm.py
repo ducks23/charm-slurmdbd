@@ -6,6 +6,8 @@ from pathlib import Path
 
 import subrocess, os, sys
 
+from ops.framework import StoredState
+
 from ops.charm import CharmBase
 
 from ops.main import main
@@ -16,6 +18,7 @@ from interface_mysql import MySQLClient
 
 
 class SlurmdbdCharm(CharmBase):
+    state = StoredState
     
     def __init__(self, *args):
         super().__init__(*args)
@@ -31,22 +34,30 @@ class SlurmdbdCharm(CharmBase):
         self.framework.observe(self.on.install, self.on_install)
         self.framework.observe(self.on.start, self.on_start)
 
+        self.state.set_default(configured=False)
+        self.state.set_default(started=False)
+    
     #need to set off hooks in this order
     #1
     def on_install(self, event):
         handle_snap_install()
         self.unit.status = ActiveStatus("snap installed")
-        logger.info(self.framework.model.unit)
-        logger.info(self.framework.model.unit.name)
+
     #2
     def on_database_available(self, event):
         handle_config(event)
         self.unit.status = ActiveStatus("config rendered")
+        self.state.configured = True
 
     #3
     def on_start(self, event):
-        handle_snap_mode("slurmdbd")
-        self.unit.status = ActiveStatus("snap mode set: slurmdbd")
+        if not self.state.configured:
+            event.defer()
+            return
+        else:
+            handle_snap_mode("slurmdbd")
+            self.unit.status = ActiveStatus("snap mode set: slurmdbd")
+            self.state.started = True
 
 
 def handle_snap_mode(snap_mode):
