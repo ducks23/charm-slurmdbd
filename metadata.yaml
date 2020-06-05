@@ -1,11 +1,10 @@
 name: charm-slurmdbd
-summary: Describe your charm here
+summary: Slurmdbd Charm
 maintainers:
     - Jesse <jesse@omnivector.solutions>
 description: |
-    A nice long description of what the product does and any
-    high level information about how the charm provides the product,
-    on which platform, etc.
+        The Slurmdbd portion of the Slurm Scheduler. Meant to be used alongside
+        the mysql database charm
 tags:
     - slurm
 
