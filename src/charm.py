@@ -1,10 +1,10 @@
 #! /usr/bin/env python3
 
-sys.path.append('lib')
-
 from pathlib import Path
 
-import subrocess, os, sys
+import subprocess, os, sys, socket, logging
+
+sys.path.append('lib')
 
 from ops.framework import StoredState
 
@@ -16,9 +16,11 @@ from ops.model import ActiveStatus
 
 from interface_mysql import MySQLClient
 
+logger = logging.getLogger()
+
 
 class SlurmdbdCharm(CharmBase):
-    state = StoredState
+    state = StoredState()
     
     def __init__(self, *args):
         super().__init__(*args)
@@ -52,6 +54,7 @@ class SlurmdbdCharm(CharmBase):
     #3
     def on_start(self, event):
         if not self.state.configured:
+            logger.info("deferred config not set yet__________")
             event.defer()
             return
         else:
@@ -100,8 +103,8 @@ def handle_config(event):
         'database': event.db_info.database,
     }
     hostname = socket.gethostname().split(".")[0]
-    source = f"{os.getcwd()}/src/slurmdbd.yaml.tmpl",
-    target = "/var/snap/slurm/common/etc/slurm-configurator/slurmdbd.yaml",
+    source = "template/slurmdbd.yaml.tmpl"
+    target = "/var/snap/slurm/common/etc/slurm-configurator/slurmdbd.yaml"
     context = {**{"hostname": hostname}, **context}
     
     source = Path(source)
