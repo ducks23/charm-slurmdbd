@@ -14,6 +14,11 @@ juju deploy .
 juju deploy mysql
 juju relate mysql:db charm-slurmdbd:db
 ```
+There is also the option of supplying the Slurmdbd charm with the slurm-snap as a resource to avoid downloading from the snapstore
+
+```bash
+juju deploy . --resource slurm=/path/to/slurm_snap
+```
 
 Contact
 -------
