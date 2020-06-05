@@ -1,0 +1,3 @@
+[submodule "mod/interface-mysql"]
+	path = mod/interface-mysql
+	url = git@github.com:ducks23/interface-mysql.git
