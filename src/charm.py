@@ -14,17 +14,26 @@ from ops.main import main
 
 from ops.model import ActiveStatus
 
+from adapters.framework import FrameworkAdapter
+
 from interface_mysql import MySQLClient
+
+from snap_ops import (
+        set_snap_mode,
+        install_snap,
+        snap_connect,
+)
 
 logger = logging.getLogger()
 
 
 class SlurmdbdCharm(CharmBase):
-    state = StoredState()
+    _state = StoredState()
     
     def __init__(self, *args):
         super().__init__(*args)
         
+        self.fw_adapter = FrameworkAdapter(self.framework) 
         self.db = MySQLClient(self, "db")
         self.framework.observe(
                 self.db.on.database_available,
@@ -33,79 +42,41 @@ class SlurmdbdCharm(CharmBase):
         self.framework.observe(self.on.install, self.on_install)
         self.framework.observe(self.on.start, self.on_start)
 
-        self.state.set_default(configured=False)
-        self.state.set_default(started=False)
+        self._state.set_default(configured=False)
+        self._state.set_default(started=False)
     
     #need to set off hooks in this order
     #1
     def on_install(self, event):
-        handle_snap_install("--edge")
-        snap_connect()
-        self.unit.status = ActiveStatus("snap installed")
+        handle_install(event, self.fw_adapter)
 
     #2
     def on_database_available(self, event):
-        handle_config(event)
-        self.unit.status = ActiveStatus("config rendered")
-        self.state.configured = True
+        handle_config(event, self._state, self.fw_adapter)
 
     #3
     def on_start(self, event):
-        if not self.state.configured:
-            logger.info("deferred config not rendered")
-            event.defer()
-            return
-        else:
-            handle_snap_mode("slurmdbd")
-            self.unit.status = ActiveStatus("snap mode set: slurmdbd")
-            self.state.started = True
+        handle_start(event, self._state, self.fw_adapter)
 
 
-def handle_snap_mode(snap_mode):
-        command = f"snap.mode={snap_mode}"
-        subprocess.call(["snap", "set", "slurm", command])
+def handle_install(event, fw_adapter):
+    install_snap("--edge")
+    snap_connect()
+    fw_adapter.set_unit_status(ActiveStatus("snap installed"))
 
 
-def snap_connect(slot=None):
-    connect_commands = [
-        ["snap", "connect", "slurm:network-control"],
-        ["snap", "connect", "slurm:system-observe"],
-        ["snap", "connect", "slurm:hardware-observe"],
-    ]
-    
-    for connect_command in connect_commands:
-        if slot:
-            connect_command.append(slot)
-        try:
-            subprocess.call(connect_command)
-        except subprocess.CalledProcessError as e:
-            logger.error("Could not connect snap interface: {}".format(e), exc_info=True)
-
-
-def handle_snap_install(channel="--edge"):
-    resource = ""
-    try:
-        resource = subprocess.check_output(['resource-get', 'slurm'])
-        resource = resource.decode().strip()
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Resource could not be found when executing: {e}", exc_info=True)
-    
-    # Create the snap install command.
-    snap_install_cmd = ["snap", "install"]
-    if Path(resource).exists() and os.stat(resource).st_size != 0:
-        snap_install_cmd.append(resource)
-        snap_install_cmd.append("--dangerous")
+def handle_start(event, state, fw_adapter):
+    if not state.configured:
+        logger.info("deferred config not rendered")
+        event.defer()
     else:
-        snap_install_cmd.append("slurm")
-        snap_install_cmd.append(channel)
-    # Execute the snap install command.
-    try:
-        subprocess.call(snap_install_cmd)
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Could not install the slurm snap using the command: {e}", exc_info=True)
+        set_snap_mode("slurmdbd")
+        logger.info("snap mode set to slurmdbd")
+        fw_adapter.set_unit_status(ActiveStatus("snap mode set to slurmdbd"))
+        state.started = True
 
 
-def handle_config(event):
+def handle_config(event, state, fw_adapter):
     """Render the context into the source template and write
     it to the target location.
     """
@@ -141,6 +112,9 @@ def handle_config(event):
 
     with open(str(target), 'w') as f:
             f.write(open(str(source), 'r').read().format(**ctxt))
+
+    fw_adapter.set_unit_status(ActiveStatus("config rendered"))
+    state.configured = True
 
 
 if __name__ == "__main__":
