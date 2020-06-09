@@ -60,12 +60,20 @@ class SlurmdbdCharm(CharmBase):
 
 
 def handle_install(event, fw_adapter):
+    """
+    installs the slurm snap from edge channel if not provided as a resource
+    then connects to the network
+    """
     install_snap("--edge")
     snap_connect()
     fw_adapter.set_unit_status(ActiveStatus("snap installed"))
 
 
 def handle_start(event, state, fw_adapter):
+    """
+    checks to see if snap is configured to mysql charm then sets the 
+    snap mode to slurmdbd
+    """
     if not state.configured:
         logger.info("deferred config not rendered")
         event.defer()
