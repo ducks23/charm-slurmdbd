@@ -39,51 +39,56 @@ class SlurmdbdCharm(CharmBase):
         self.slurm_instance_manager = self.slurm_instance_manager_cls(self, "slurm")
 
         self.fw_adapter = FrameworkAdapter(self.framework) 
+        
         self.db = MySQLClient(self, "db")
+        
         self.framework.observe(
-                self.db.on.database_available,
-                self.on_database_available
+            self.db.on.database_available,
+            self._on_database_available
         )
-        self.framework.observe(self.on.install, self.on_install)
-        self.framework.observe(self.on.start, self.on_start)
-
+        self.framework.observe(
+            self.on.install, 
+            self._on_install
+        )
+        self.framework.observe(
+            self.on.start,
+            self._on_start
+        )
         self._state.set_default(configured=False)
         self._state.set_default(started=False)
     
     #need to set off hooks in this order
     #1
-    def on_install(self, event):
+    def _on_install(self, event):
         handle_install(
-                event,
-                self.fw_adapter,
-                self.slurm_instance_manager
+            self.fw_adapter,
+            self.slurm_instance_manager
         )
 
     #2
-    def on_database_available(self, event):
+    def _on_database_available(self, event):
         handle_config(
-                event,
-                self._state,
-                self.fw_adapter,
+            event,
+            self._state,
+            self.fw_adapter,
         )
 
     #3
-    def on_start(self, event):
+    def _on_start(self, event):
         handle_start(
-                event,
-                self._state,
-                self.fw_adapter,
-                self.slurm_instance_manager
+            event,
+            self._state,
+            self.fw_adapter,
+            self.slurm_instance_manager
         )
 
 
-def handle_install(event, fw_adapter, slurm_inst):
+def handle_install(fw_adapter, slurm_inst):
     """
     installs the slurm snap from edge channel if not provided as a resource
     then connects to the network
     """
-    slurm_inst.install_snap("--edge")
-    slurm_inst.snap_connect()
+    slurm_inst.install()
     fw_adapter.set_unit_status(ActiveStatus("snap installed"))
 
 

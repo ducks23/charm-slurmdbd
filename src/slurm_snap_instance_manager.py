@@ -12,6 +12,11 @@ from ops.framework import (
         ObjectEvents
 )
 
+from ops.model import ModelError
+
+from adapters.framework import FrameworkAdapter
+
+
 class SlurmSnapInstalledEvent(EventBase):
     def __init__(self, handle):
         super().__init__(handle)
@@ -33,16 +38,17 @@ class SlurmSnapInstanceManager(Object):
 
     _stored = StoredState()
 
+
     def __init__(self, charm, key):
         super().__init__(charm, key)
-
+        self.fw_adapter = FrameworkAdapter(self.framework)
 
     def set_snap_mode(self, snap_mode):
         command = f"snap.mode={snap_mode}"
         subprocess.call(["snap", "set", "slurm", command])
 
 
-    def snap_connect(self, slot=None):
+    def _snap_connect(self, slot=None):
         connect_commands = [
             ["snap", "connect", "slurm:network-control"],
             ["snap", "connect", "slurm:system-observe"],
@@ -57,23 +63,27 @@ class SlurmSnapInstanceManager(Object):
             except subprocess.CalledProcessError as e:
                 logger.error("Could not connect snap interface: {}".format(e), exc_info=True)
 
+    def install(self):
+        self._install_snap()
+        self._snap_connect()
 
-    def install_snap(self, channel="--edge"):
-        resource = ""
+
+    def _install_snap(self):
         try:
-            resource = subprocess.check_output(['resource-get', 'slurm'])
-            resource = resource.decode().strip()
-        except subprocess.CalledProcessError as e:
+            resource_path = self.model.resources.fetch('slurm')
+        except ModelError:
+            resource_path = None
             logger.error(f"Resource could not be found when executing: {e}", exc_info=True)
 
         # Create the snap install command.
         snap_install_cmd = ["snap", "install"]
-        if Path(resource).exists() and os.stat(resource).st_size != 0:
-            snap_install_cmd.append(resource)
+        if Path(resource_path).exists() and os.stat(resource_path).st_size != 0:
+            snap_install_cmd.append(resource_path)
             snap_install_cmd.append("--dangerous")
         else:
+            snap_store_channel = self.fw_adapter.get_config("snap-store-channel")
             snap_install_cmd.append("slurm")
-            snap_install_cmd.append(channel)
+            snap_install_cmd.append(f"--{snap_store_channel}")
         # Execute the snap install command.
         try:
             subprocess.call(snap_install_cmd)
