@@ -18,11 +18,7 @@ from adapters.framework import FrameworkAdapter
 
 from interface_mysql import MySQLClient
 
-from snap_ops import (
-        set_snap_mode,
-        install_snap,
-        snap_connect,
-)
+from slurm_snap_instance_manager import SlurmSnapInstanceManager
 
 logger = logging.getLogger()
 
@@ -30,6 +26,8 @@ logger = logging.getLogger()
 class SlurmdbdCharm(CharmBase):
     _state = StoredState()
     
+    slurm_instance_manager_cls = SlurmSnapInstanceManager
+
     def __init__(self, *args):
         super().__init__(*args)
         
@@ -37,7 +35,8 @@ class SlurmdbdCharm(CharmBase):
         # testing the status of snap
         # testing db connection
         # seeing if you want to configure without mysql
-
+        
+        self.slurm_instance_manager = self.slurm_instance_manager_cls(self, "slurm")
 
         self.fw_adapter = FrameworkAdapter(self.framework) 
         self.db = MySQLClient(self, "db")
@@ -54,28 +53,41 @@ class SlurmdbdCharm(CharmBase):
     #need to set off hooks in this order
     #1
     def on_install(self, event):
-        handle_install(event, self.fw_adapter)
+        handle_install(
+                event,
+                self.fw_adapter,
+                self.slurm_instance_manager
+        )
 
     #2
     def on_database_available(self, event):
-        handle_config(event, self._state, self.fw_adapter)
+        handle_config(
+                event,
+                self._state,
+                self.fw_adapter,
+        )
 
     #3
     def on_start(self, event):
-        handle_start(event, self._state, self.fw_adapter)
+        handle_start(
+                event,
+                self._state,
+                self.fw_adapter,
+                self.slurm_instance_manager
+        )
 
 
-def handle_install(event, fw_adapter):
+def handle_install(event, fw_adapter, slurm_inst):
     """
     installs the slurm snap from edge channel if not provided as a resource
     then connects to the network
     """
-    install_snap("--edge")
-    snap_connect()
+    slurm_inst.install_snap("--edge")
+    slurm_inst.snap_connect()
     fw_adapter.set_unit_status(ActiveStatus("snap installed"))
 
 
-def handle_start(event, state, fw_adapter):
+def handle_start(event, state, fw_adapter, slurm_inst ):
     """
     checks to see if snap is configured to mysql charm then sets the 
     snap mode to slurmdbd
@@ -84,7 +96,7 @@ def handle_start(event, state, fw_adapter):
         logger.info("deferred config not rendered")
         event.defer()
     else:
-        set_snap_mode("slurmdbd")
+        slurm_inst.set_snap_mode("slurmdbd")
         logger.info("snap mode set to slurmdbd")
         fw_adapter.set_unit_status(ActiveStatus("snap mode set to slurmdbd"))
         state.started = True
