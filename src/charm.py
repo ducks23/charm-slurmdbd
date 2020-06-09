@@ -33,6 +33,12 @@ class SlurmdbdCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         
+        #things to consider:
+        # testing the status of snap
+        # testing db connection
+        # seeing if you want to configure without mysql
+
+
         self.fw_adapter = FrameworkAdapter(self.framework) 
         self.db = MySQLClient(self, "db")
         self.framework.observe(
