@@ -17,17 +17,16 @@ from ops.model import ModelError
 from adapters.framework import FrameworkAdapter
 
 
-class SlurmSnapInstalledEvent(EventBase):
+class ConfigChangedEvent(EventBase):
     def __init__(self, handle):
         super().__init__(handle)
-        self.installed = True
+        self.config = True
 
-    def is_installed(self):
-        return self.installed
-
+    def is_configured(self):
+        return self.config
 
 class SlurmSnapInstanceManagerEvents(ObjectEvents):
-    snap_installed = EventSource(SlurmSnapInstalledEvent)
+    config_changed = EventSource(ConfigChangedEvent)
 
 class SlurmSnapInstanceManager(Object):
     """
@@ -48,6 +47,11 @@ class SlurmSnapInstanceManager(Object):
         subprocess.call(["snap", "set", "slurm", command])
 
 
+    def install(self):
+        self._install_snap()
+        self._snap_connect()
+    
+    
     def _snap_connect(self, slot=None):
         connect_commands = [
             ["snap", "connect", "slurm:network-control"],
@@ -62,10 +66,6 @@ class SlurmSnapInstanceManager(Object):
                 subprocess.call(connect_command)
             except subprocess.CalledProcessError as e:
                 logger.error("Could not connect snap interface: {}".format(e), exc_info=True)
-
-    def install(self):
-        self._install_snap()
-        self._snap_connect()
 
 
     def _install_snap(self):
@@ -87,9 +87,8 @@ class SlurmSnapInstanceManager(Object):
             subprocess.call(snap_install_cmd)
         except subprocess.CalledProcessError as e:
             logger.error(f"Could not install the slurm snap using the command: {e}", exc_info=True)
-        self.on.snap_installed.emit()
 
-    def write_config(self, src, target, context):
+    def write_config(self, source, target, context):
         if context and type(context) == dict:
             ctxt = context
         else:
@@ -103,3 +102,5 @@ class SlurmSnapInstanceManager(Object):
 
         with open(str(target), 'w') as f:
             f.write(open(str(source), 'r').read().format(**ctxt))
+
+        self.on.config_changed.emit()

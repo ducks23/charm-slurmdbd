@@ -46,12 +46,12 @@ class SlurmdbdCharm(CharmBase):
             self._on_database_available
         )
         self.framework.observe(
-            self.on.install, 
-            self._on_install
+            self.slurm_instance_manager.on.config_changed,
+            self._on_config_changed
         )
         self.framework.observe(
-            self.on.start,
-            self._on_start
+            self.on.install, 
+            self._on_install
         )
         self._state.set_default(configured=False)
         self._state.set_default(started=False)
@@ -69,9 +69,10 @@ class SlurmdbdCharm(CharmBase):
             event,
             self._state,
             self.fw_adapter,
+            self.slurm_instance_manager
         )
     #3
-    def _on_start(self, event):
+    def _on_config_changed(self, event):
         handle_start(
             event,
             self._state,
@@ -89,23 +90,7 @@ def handle_install(fw_adapter, slurm_inst):
     fw_adapter.set_unit_status(ActiveStatus("snap installed"))
 
 
-def handle_start(event, state, fw_adapter, slurm_inst ):
-    """
-    checks to see if snap is configured to mysql charm then sets the 
-    snap mode to slurmdbd
-    """
-    if not state.configured:
-        logger.info("deferred config not rendered")
-        event.defer()
-    else:
-        #move snap_mode into config.yaml
-        slurm_inst.set_snap_mode("slurmdbd")
-        logger.info("snap mode set to slurmdbd")
-        fw_adapter.set_unit_status(ActiveStatus("snap mode set to slurmdbd"))
-        state.started = True
-
-
-def handle_config(event, state, fw_adapter):
+def handle_config(event, state, fw_adapter, slurm_inst):
     """Render the context into the source template and write
     it to the target location.
     """
@@ -124,8 +109,17 @@ def handle_config(event, state, fw_adapter):
     slurm_inst.write_config(source, target, context)
     
     fw_adapter.set_unit_status(ActiveStatus("config rendered"))
-    state.configured = True
 
+
+def handle_start(event, state, fw_adapter, slurm_inst ):
+    """
+    checks to see if snap is configured to mysql charm then sets the 
+    snap mode to slurmdbd
+    """
+    #move snap_mode into config.yaml
+    slurm_inst.set_snap_mode("slurmdbd")
+    logger.info("snap mode set to slurmdbd")
+    fw_adapter.set_unit_status(ActiveStatus("snap mode set to slurmdbd"))
 
 if __name__ == "__main__":
     main(SlurmdbdCharm)
