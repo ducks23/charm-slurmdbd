@@ -1,7 +1,0 @@
-series: xenial
-
-applications:
-    charm-slurmdbd:
-        charm: ../../../../
-        num_units: 1
-

@@ -1,0 +1,5 @@
+options:
+  snap-store-channel:
+    type: string
+    description: snap store channel to install slurm snap from
+    default: "stable"
