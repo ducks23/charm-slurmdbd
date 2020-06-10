@@ -88,14 +88,14 @@ def handle_config(event, state, fw_adapter, slurm_inst):
             'port': event.db_info.port,
             'database': event.db_info.database,
         }
-    hostname = socket.gethostname().split(".")[0]
-    source = Path("template/slurmdbd.yaml.tmpl")
-    target = Path("/var/snap/slurm/common/etc/slurm-configurator/slurmdbd.yaml")
-    context = {**{"hostname": hostname}, **context}
-    slurm_inst.write_config(source, target, context)
-    
-    fw_adapter.set_unit_status(ActiveStatus("config rendered"))
-    state.configured = True
+        hostname = socket.gethostname().split(".")[0]
+        source = Path("template/slurmdbd.yaml.tmpl")
+        target = Path("/var/snap/slurm/common/etc/slurm-configurator/slurmdbd.yaml")
+        context = {**{"hostname": hostname}, **context}
+        slurm_inst.write_config(source, target, context)
+        
+        fw_adapter.set_unit_status(ActiveStatus("config rendered"))
+        state.configured = True
 
 
 def handle_start(event, state, fw_adapter, slurm_inst ):
