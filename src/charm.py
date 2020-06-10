@@ -32,7 +32,6 @@ class SlurmdbdCharm(CharmBase):
         super().__init__(*args)
         
         #things to consider:
-        # testing the status of snap
         # testing db connection
         # seeing if you want to configure without mysql
         
@@ -64,7 +63,6 @@ class SlurmdbdCharm(CharmBase):
             self.fw_adapter,
             self.slurm_instance_manager
         )
-
     #2
     def _on_database_available(self, event):
         handle_config(
@@ -72,7 +70,6 @@ class SlurmdbdCharm(CharmBase):
             self._state,
             self.fw_adapter,
         )
-
     #3
     def _on_start(self, event):
         handle_start(
@@ -101,6 +98,7 @@ def handle_start(event, state, fw_adapter, slurm_inst ):
         logger.info("deferred config not rendered")
         event.defer()
     else:
+        #move snap_mode into config.yaml
         slurm_inst.set_snap_mode("slurmdbd")
         logger.info("snap mode set to slurmdbd")
         fw_adapter.set_unit_status(ActiveStatus("snap mode set to slurmdbd"))
@@ -119,31 +117,12 @@ def handle_config(event, state, fw_adapter):
         'database': event.db_info.database,
     }
     hostname = socket.gethostname().split(".")[0]
-    source = "template/slurmdbd.yaml.tmpl"
-    target = "/var/snap/slurm/common/etc/slurm-configurator/slurmdbd.yaml"
+    source = Path("template/slurmdbd.yaml.tmpl")
+    target = Path("/var/snap/slurm/common/etc/slurm-configurator/slurmdbd.yaml")
     context = {**{"hostname": hostname}, **context}
     
-    source = Path(source)
-    target = Path(target)
-
-    if context and type(context) == dict:
-        ctxt = context
-    else:
-        raise TypeError(
-            f"Incorect type {type(context)} for context - Please debug."
-        )
-
-    if not source.exists():
-        raise Exception(
-            f"Source config {source} does not exist - Please debug."
-        )
-
-    if target.exists():
-        target.unlink()
-
-    with open(str(target), 'w') as f:
-            f.write(open(str(source), 'r').read().format(**ctxt))
-
+    slurm_inst.write_config(source, target, context)
+    
     fw_adapter.set_unit_status(ActiveStatus("config rendered"))
     state.configured = True
 

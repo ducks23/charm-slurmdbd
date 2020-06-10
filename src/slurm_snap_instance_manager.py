@@ -74,8 +74,6 @@ class SlurmSnapInstanceManager(Object):
         except ModelError:
             resource_path = None
             logger.error(f"Resource could not be found when executing: {e}", exc_info=True)
-
-        # Create the snap install command.
         snap_install_cmd = ["snap", "install"]
         if Path(resource_path).exists() and os.stat(resource_path).st_size != 0:
             snap_install_cmd.append(resource_path)
@@ -91,3 +89,17 @@ class SlurmSnapInstanceManager(Object):
             logger.error(f"Could not install the slurm snap using the command: {e}", exc_info=True)
         self.on.snap_installed.emit()
 
+    def write_config(self, src, target, context):
+        if context and type(context) == dict:
+            ctxt = context
+        else:
+            raise TypeError(f"Incorect type {type(context)} for context - Please debug.")
+
+        if not source.exists():
+            raise Exception(f"Source config {source} does not exist - Please debug.")
+
+        if target.exists():
+            target.unlink()
+
+        with open(str(target), 'w') as f:
+            f.write(open(str(source), 'r').read().format(**ctxt))
