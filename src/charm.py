@@ -24,46 +24,32 @@ logger = logging.getLogger()
 
 
 class SlurmdbdCharm(CharmBase):
-    _state = StoredState()
-    
+    _state = StoredState() 
     slurm_instance_manager_cls = SlurmSnapInstanceManager
 
     def __init__(self, *args):
         super().__init__(*args)
         
-        #things to consider:
-        # testing db connection
-        # seeing if you want to configure without mysql
-        
         self.slurm_instance_manager = self.slurm_instance_manager_cls(self, "slurm")
-
         self.fw_adapter = FrameworkAdapter(self.framework) 
-        
         self.db = MySQLClient(self, "db")
-        
-        self.framework.observe(
-            self.db.on.database_available,
-            self._on_database_available
-        )
-        self.framework.observe(
-            self.slurm_instance_manager.on.config_changed,
-            self._on_config_changed
-        )
-        self.framework.observe(
-            self.on.install, 
-            self._on_install
-        )
+
+        event_handler_bindings = {
+            self.db.on.database_available: self._on_database_available,
+            self.slurm_instance_manager.on.config_changed: self._on_config_changed,
+            self.on.install: self._on_install
+        }
+        for event, handler in event_handler_bindings.items():
+            self.fw_adapter.observe(event, handler)
+
         self._state.set_default(configured=False)
-        self._state.set_default(started=False)
     
-    #need to set off hooks in this order
-    #1
     def _on_install(self, event):
         handle_install(
             self.fw_adapter,
             self.slurm_instance_manager
         )
-    #2
+
     def _on_database_available(self, event):
         handle_config(
             event,
@@ -71,7 +57,7 @@ class SlurmdbdCharm(CharmBase):
             self.fw_adapter,
             self.slurm_instance_manager
         )
-    #3
+
     def _on_config_changed(self, event):
         handle_start(
             event,
@@ -94,21 +80,22 @@ def handle_config(event, state, fw_adapter, slurm_inst):
     """Render the context into the source template and write
     it to the target location.
     """
-    context = {
-        'user': event.db_info.user,
-        'password': event.db_info.password,
-        'host': event.db_info.host,
-        'port': event.db_info.port,
-        'database': event.db_info.database,
-    }
+    if state.configured is False:   
+        context = {
+            'user': event.db_info.user,
+            'password': event.db_info.password,
+            'host': event.db_info.host,
+            'port': event.db_info.port,
+            'database': event.db_info.database,
+        }
     hostname = socket.gethostname().split(".")[0]
     source = Path("template/slurmdbd.yaml.tmpl")
     target = Path("/var/snap/slurm/common/etc/slurm-configurator/slurmdbd.yaml")
     context = {**{"hostname": hostname}, **context}
-    
     slurm_inst.write_config(source, target, context)
     
     fw_adapter.set_unit_status(ActiveStatus("config rendered"))
+    state.configured = True
 
 
 def handle_start(event, state, fw_adapter, slurm_inst ):
