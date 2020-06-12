@@ -1,15 +1,18 @@
-import subprocess, logging, os
+import logging
+import os
+import socket
+import subprocess
 
 from pathlib import Path
 
 logger = logging.getLogger()
 
 from ops.framework import (
-        Object,
-        StoredState,
-        EventBase,
-        EventSource,
-        ObjectEvents,
+    Object,
+    StoredState,
+    EventBase,
+    EventSource,
+    ObjectEvents,
 )
 
 from ops.model import ModelError
@@ -25,8 +28,10 @@ class SlurmConfigChangedEvent(EventBase):
     def is_configured(self):
         return self.config
 
+
 class SlurmSnapInstanceManagerEvents(ObjectEvents):
     slurm_config_changed = EventSource(SlurmConfigChangedEvent)
+
 
 class SlurmSnapInstanceManager(Object):
     """
@@ -40,18 +45,50 @@ class SlurmSnapInstanceManager(Object):
 
     def __init__(self, charm, key):
         super().__init__(charm, key)
+        self.snap_mode = key
         self.fw_adapter = FrameworkAdapter(self.framework)
 
-    def set_snap_mode(self, snap_mode):
-        command = f"snap.mode={snap_mode}"
-        subprocess.call(["snap", "set", "slurm", command])
-
+        # Set the template and config file paths based on the snap.mode.
+        # Throw an exception if initialized with an unsupported snap.mode.
+        if self.snap_mode == "slurmdbd":
+            self.slurm_config_yaml = Path( "/var/snap/slurm/common/etc"
+                                           "/slurm-configurator/slurmdbd.yaml")
+            self.slurm_config_template = Path("templates/slurmdbd.yaml.tmpl")
+        elif self.snap_mode in ["slurmd", "slurmrestd", "slurmctld"]:
+            self.slurm_config_yaml = Path("/var/snap/slurm/common/etc"
+                                          "/slurm-configurator/slurm.yaml")
+            self.slurm_config_template = Path("templates/slurm.yaml.tmpl")
+        else:
+            raise Exception as e:
+                logger.error(
+                   f"Slurm component not supported: {self.snap_mode} - {e}"
+                    exc_info=True
+                )
+    
+    @property
+    def _hostname(self):
+        return socket.gethostname().split(".")[0]
+ 
+    def set_snap_mode(self):
+        """Set the snap mode, thorw an exception if it fails.
+        """
+        try:
+            subprocess.call([
+                "snap",
+                "set",
+                "slurm",
+                f"snap.mode={self.snap_mode}",
+            ])
+        except subprocess.CalledProcessError as e:
+            logger.error(
+               f"Setting the snap.mode failed. snap.mode={self.snap_mode} - {e}"
+                exc_info=True
+            )
 
     def install(self):
         self._install_snap()
         self._snap_connect()
-    
-    
+   
     def _snap_connect(self, slot=None):
         connect_commands = [
             ["snap", "connect", "slurm:network-control"],
@@ -89,20 +126,25 @@ class SlurmSnapInstanceManager(Object):
             logger.error(
                 f"Could not install the slurm snap using the command: {e}", exc_info=True)
 
-    def write_config(self, source, target, context):
-        if context and type(context) == dict:
-            ctxt = context
-        else:
-            raise TypeError(
-                    f"Incorect type {type(context)} for context - Please debug.")
+    def write_config(self, context):
 
-        if not source.exists():
+        ctxt = {}
+        source = self.slurm_config_template
+        target = self.slurm_config_yaml
+
+        if not type(context) == dict:
+            raise TypeError as e:
+                logger.error(
+                    f"Could not install the slurm snap using the command: {e}",
+                    exc_info=True
+                )
+        else:
+            ctxt = {**{"hostname": self._hostname}, **context}
+
+       if not source.exists():
             raise Exception(f"Source config {source} does not exist - Please debug.")
 
-        if target.exists():
+       if target.exists():
             target.unlink()
 
-        with open(str(target), 'w') as f:
-            f.write(open(str(source), 'r').read().format(**ctxt))
-
-        self.on.slurm_config_changed.emit()
+        target.write_text(source.read_text().format(**ctxt))
