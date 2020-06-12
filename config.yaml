@@ -3,3 +3,8 @@ options:
     type: string
     description: snap store channel to install slurm snap from
     default: "stable"
+options:
+  snap-mode:
+    type: string
+    description: sets the mode for slurm configuration
+    default: "slurmdbd"

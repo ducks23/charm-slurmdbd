@@ -10,9 +10,11 @@ Quickstart
 
 
 ```bash
+git submodule init
+git submodule update
 juju deploy .
 juju deploy mysql
-juju relate mysql:db charm-slurmdbd:db
+juju relate mysql:db slurmdbd:db
 ```
 There is also the option of supplying the Slurmdbd Charm with the slurm-snap as a resource to avoid downloading from the snapstore
 
