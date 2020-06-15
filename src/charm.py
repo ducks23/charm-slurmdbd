@@ -45,6 +45,7 @@ class SlurmdbdCharm(CharmBase):
 
     def _on_install(self, event):
         handle_install(
+            event,
             self.fw_adapter,
             self.slurm_snap,
         )
@@ -54,11 +55,10 @@ class SlurmdbdCharm(CharmBase):
             event,
             self.slurm_snap,
             self.fw_adapter,
-            self.state,
         )
 
 
-def handle_install(fw_adapter, slurm_snap):
+def handle_install(event, fw_adapter, slurm_snap):
     """
     installs the slurm snap from edge channel if not provided as a resource
     then connects to the network
@@ -67,7 +67,7 @@ def handle_install(fw_adapter, slurm_snap):
     fw_adapter.set_unit_status(ActiveStatus("snap installed"))
 
 
-def handle_database_available(event, slurm_snap, fw_adapter, state):
+def handle_database_available(event, slurm_snap, fw_adapter):
     """Render the database details into the slurmdbd.yaml and
     set the snap.mode.
     """
@@ -79,10 +79,10 @@ def handle_database_available(event, slurm_snap, fw_adapter, state):
         'host': event.db_info.host,
         'port': event.db_info.port,
         'database': event.db_info.database,
-    }
-
+    })
     # Set the snap.mode
     slurm_snap.set_snap_mode()
+    fw_adapter.set_unit_status(ActiveStatus("snap mode set"))
      
 
 if __name__ == "__main__":

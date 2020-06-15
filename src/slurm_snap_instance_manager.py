@@ -15,7 +15,11 @@ from ops.framework import (
     ObjectEvents,
 )
 
-from ops.model import ModelError
+from ops.model import (
+        ModelError,
+        ActiveStatus,
+        MaintenanceStatus,
+    )
 
 from adapters.framework import FrameworkAdapter
 
@@ -59,11 +63,10 @@ class SlurmSnapInstanceManager(Object):
                                           "/slurm-configurator/slurm.yaml")
             self.slurm_config_template = Path("templates/slurm.yaml.tmpl")
         else:
-            raise Exception as e:
-                logger.error(
-                   f"Slurm component not supported: {self.snap_mode} - {e}"
+            logger.error(
+                    f"Slurm component not supported: {self.snap_mode}",
                     exc_info=True
-                )
+            )
     
     @property
     def _hostname(self):
@@ -81,7 +84,7 @@ class SlurmSnapInstanceManager(Object):
             ])
         except subprocess.CalledProcessError as e:
             logger.error(
-               f"Setting the snap.mode failed. snap.mode={self.snap_mode} - {e}"
+               f"Setting the snap.mode failed. snap.mode={self.snap_mode} - {e}",
                 exc_info=True
             )
 
@@ -107,24 +110,24 @@ class SlurmSnapInstanceManager(Object):
 
     def _install_snap(self):
         snap_install_cmd = ["snap", "install"]
-        resource_path = "0"
+        resource_path = None
         try:
             resource_path = self.model.resources.fetch('slurm')
         except ModelError as e:
             logger.error(f"Resource could not be found when executing: {e}", exc_info=True)
-        if len(str(resource_path)) > 1 and Path(resource_path).exists():
+        if resource_path:
             snap_install_cmd.append(resource_path)
             snap_install_cmd.append("--dangerous")
         else:
             snap_store_channel = self.fw_adapter.get_config("snap-store-channel")
             snap_install_cmd.append("slurm")
             snap_install_cmd.append(f"--{snap_store_channel}")
-        
         try:
             subprocess.call(snap_install_cmd)
         except subprocess.CalledProcessError as e:
             logger.error(
-                f"Could not install the slurm snap using the command: {e}", exc_info=True)
+                f"Could not install the slurm snap using the command: {e}", exc_info=True
+            )
 
     def write_config(self, context):
 
@@ -133,18 +136,14 @@ class SlurmSnapInstanceManager(Object):
         target = self.slurm_config_yaml
 
         if not type(context) == dict:
-            raise TypeError as e:
-                logger.error(
-                    f"Could not install the slurm snap using the command: {e}",
-                    exc_info=True
-                )
+            self.framework.set_unit_status(MaintenanceStatus("context not of type dict"))
+            return
         else:
             ctxt = {**{"hostname": self._hostname}, **context}
-
-       if not source.exists():
-            raise Exception(f"Source config {source} does not exist - Please debug.")
-
-       if target.exists():
+        if not source.exists():
+           # raise Exception(f"Source config {source} does not exist - Please debug.")
+            self.framework.set_unit_status(MaintenanceStatus("source doesn't exist"))
+        if target.exists():
             target.unlink()
 
         target.write_text(source.read_text().format(**ctxt))
