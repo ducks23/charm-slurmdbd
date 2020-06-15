@@ -1,23 +1,30 @@
-import subprocess, logging, os
+import logging
+import os
+import socket
+import subprocess
 
 from pathlib import Path
 
 logger = logging.getLogger()
 
 from ops.framework import (
-        Object,
-        StoredState,
-        EventBase,
-        EventSource,
-        ObjectEvents
+    Object,
+    StoredState,
+    EventBase,
+    EventSource,
+    ObjectEvents,
 )
 
-from ops.model import ModelError
+from ops.model import (
+        ModelError,
+        ActiveStatus,
+        MaintenanceStatus,
+    )
 
 from adapters.framework import FrameworkAdapter
 
 
-class ConfigChangedEvent(EventBase):
+class SlurmConfigChangedEvent(EventBase):
     def __init__(self, handle):
         super().__init__(handle)
         self.config = True
@@ -25,8 +32,10 @@ class ConfigChangedEvent(EventBase):
     def is_configured(self):
         return self.config
 
+
 class SlurmSnapInstanceManagerEvents(ObjectEvents):
-    config_changed = EventSource(ConfigChangedEvent)
+    slurm_config_changed = EventSource(SlurmConfigChangedEvent)
+
 
 class SlurmSnapInstanceManager(Object):
     """
@@ -40,18 +49,49 @@ class SlurmSnapInstanceManager(Object):
 
     def __init__(self, charm, key):
         super().__init__(charm, key)
+        self.snap_mode = key
         self.fw_adapter = FrameworkAdapter(self.framework)
 
-    def set_snap_mode(self, snap_mode):
-        command = f"snap.mode={snap_mode}"
-        subprocess.call(["snap", "set", "slurm", command])
-
+        # Set the template and config file paths based on the snap.mode.
+        # Throw an exception if initialized with an unsupported snap.mode.
+        if self.snap_mode == "slurmdbd":
+            self.slurm_config_yaml = Path( "/var/snap/slurm/common/etc"
+                                           "/slurm-configurator/slurmdbd.yaml")
+            self.slurm_config_template = Path("templates/slurmdbd.yaml.tmpl")
+        elif self.snap_mode in ["slurmd", "slurmrestd", "slurmctld"]:
+            self.slurm_config_yaml = Path("/var/snap/slurm/common/etc"
+                                          "/slurm-configurator/slurm.yaml")
+            self.slurm_config_template = Path("templates/slurm.yaml.tmpl")
+        else:
+            logger.error(
+                    f"Slurm component not supported: {self.snap_mode}",
+                    exc_info=True
+            )
+    
+    @property
+    def _hostname(self):
+        return socket.gethostname().split(".")[0]
+ 
+    def set_snap_mode(self):
+        """Set the snap mode, thorw an exception if it fails.
+        """
+        try:
+            subprocess.call([
+                "snap",
+                "set",
+                "slurm",
+                f"snap.mode={self.snap_mode}",
+            ])
+        except subprocess.CalledProcessError as e:
+            logger.error(
+               f"Setting the snap.mode failed. snap.mode={self.snap_mode} - {e}",
+                exc_info=True
+            )
 
     def install(self):
         self._install_snap()
         self._snap_connect()
-    
-    
+   
     def _snap_connect(self, slot=None):
         connect_commands = [
             ["snap", "connect", "slurm:network-control"],
@@ -69,38 +109,41 @@ class SlurmSnapInstanceManager(Object):
 
 
     def _install_snap(self):
+        snap_install_cmd = ["snap", "install"]
+        resource_path = None
         try:
             resource_path = self.model.resources.fetch('slurm')
-        except ModelError:
-            resource_path = None
+        except ModelError as e:
             logger.error(f"Resource could not be found when executing: {e}", exc_info=True)
-        snap_install_cmd = ["snap", "install"]
-        if Path(resource_path).exists() and os.stat(resource_path).st_size != 0:
+        if resource_path:
             snap_install_cmd.append(resource_path)
             snap_install_cmd.append("--dangerous")
         else:
             snap_store_channel = self.fw_adapter.get_config("snap-store-channel")
             snap_install_cmd.append("slurm")
             snap_install_cmd.append(f"--{snap_store_channel}")
-        # Execute the snap install command.
         try:
             subprocess.call(snap_install_cmd)
         except subprocess.CalledProcessError as e:
-            logger.error(f"Could not install the slurm snap using the command: {e}", exc_info=True)
+            logger.error(
+                f"Could not install the slurm snap using the command: {e}", exc_info=True
+            )
 
-    def write_config(self, source, target, context):
-        if context and type(context) == dict:
-            ctxt = context
+    def write_config(self, context):
+
+        ctxt = {}
+        source = self.slurm_config_template
+        target = self.slurm_config_yaml
+
+        if not type(context) == dict:
+            self.framework.set_unit_status(MaintenanceStatus("context not of type dict"))
+            return
         else:
-            raise TypeError(f"Incorect type {type(context)} for context - Please debug.")
-
+            ctxt = {**{"hostname": self._hostname}, **context}
         if not source.exists():
-            raise Exception(f"Source config {source} does not exist - Please debug.")
-
+           # raise Exception(f"Source config {source} does not exist - Please debug.")
+            self.framework.set_unit_status(MaintenanceStatus("source doesn't exist"))
         if target.exists():
             target.unlink()
 
-        with open(str(target), 'w') as f:
-            f.write(open(str(source), 'r').read().format(**ctxt))
-
-        self.on.config_changed.emit()
+        target.write_text(source.read_text().format(**ctxt))
