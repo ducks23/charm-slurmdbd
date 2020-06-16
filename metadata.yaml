@@ -12,6 +12,9 @@ series:
 requires:
   db:
     interface: mysql
+provides:
+  slurmdbd-host-port:
+    interface: host-port
 resources:
   slurm:
     type: file

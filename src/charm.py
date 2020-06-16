@@ -20,6 +20,12 @@ from interface_mysql import MySQLClient
 
 from slurm_snap_instance_manager import SlurmSnapInstanceManager
 
+from interface_host_port import (
+        HostPortProvides,
+        #HostPortRequires,
+)
+
+
 logger = logging.getLogger()
 
 
@@ -30,6 +36,8 @@ class SlurmdbdCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         
+        # provides host port to slurmctld
+        self.slurmctld_hostport = HostPortProvides(self, "slurmdbd-host-port")
         self.slurm_snap = self.slurm_instance_manager_cls(self, "slurmdbd")
         self.fw_adapter = FrameworkAdapter(self.framework) 
         self.db = MySQLClient(self, "db")
@@ -48,6 +56,7 @@ class SlurmdbdCharm(CharmBase):
             event,
             self.fw_adapter,
             self.slurm_snap,
+            self.slurmctld_hostport,
         )
 
     def _on_database_available(self, event):
@@ -58,12 +67,18 @@ class SlurmdbdCharm(CharmBase):
         )
 
 
-def handle_install(event, fw_adapter, slurm_snap):
+def handle_install(event, fw_adapter, slurm_snap, slurmctld):
     """
     installs the slurm snap from edge channel if not provided as a resource
     then connects to the network
     """
-    slurm_snap.install()
+    #slurm_snap.install()
+    
+    #accounting storage host
+    slurmctld.set_host(get_host())
+    #accounting storage port
+    slurmctld.set_port("6819")
+
     fw_adapter.set_unit_status(ActiveStatus("snap installed"))
 
 
@@ -83,7 +98,10 @@ def handle_database_available(event, slurm_snap, fw_adapter):
     # Set the snap.mode
     slurm_snap.set_snap_mode()
     fw_adapter.set_unit_status(ActiveStatus("snap mode set"))
-     
+
+def get_host():
+    return str(socket.gethostbyname(socket.gethostname()))
+
 
 if __name__ == "__main__":
     main(SlurmdbdCharm)
