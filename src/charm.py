@@ -4,7 +4,7 @@ from pathlib import Path
 
 import subprocess, os, sys, socket, logging
 
-sys.path.append('lib')
+sys.path.append('venv')
 
 from ops.framework import StoredState
 
@@ -22,7 +22,6 @@ from slurm_snap_instance_manager import SlurmSnapInstanceManager
 
 from interface_host_port import (
         HostPortProvides,
-        #HostPortRequires,
 )
 
 

@@ -5,7 +5,10 @@ from time import sleep
 import logging
 
 from ops.framework import (
+    EventBase,
+    EventSource,
     Object,
+    ObjectEvents,
 )
 
 logger = logging.getLogger()
