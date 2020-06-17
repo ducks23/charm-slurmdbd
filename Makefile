@@ -2,9 +2,17 @@
 # export PATH := /snap/bin:$(PATH)
 
 # TARGETS
+#
+
+install-reqs:
+	mkdir venv
+	pip3 install -r requirements.txt --target venv
 
 clean:
 	@rm -rf __pycache__/ */__pycache__/ */*/__pycache__/ */*/*/__pycache__/
+
+clean-venv:
+	@rm -rf venv/
 
 lint: ## Run linter
 	@tox lint

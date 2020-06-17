@@ -1,1 +1,2 @@
 ops
+git+https://github.com/omnivector-solutions/interface-mysql.git@master
