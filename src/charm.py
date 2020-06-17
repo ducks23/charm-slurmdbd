@@ -72,13 +72,7 @@ def handle_install(event, fw_adapter, slurm_snap, slurmctld):
     installs the slurm snap from edge channel if not provided as a resource
     then connects to the network
     """
-    slurm_snap.install()
-    
-    #accounting storage host
-    slurmctld.set_host(get_host())
-    #accounting storage port
-    slurmctld.set_port("6819")
-
+    #slurm_snap.install()
     fw_adapter.set_unit_status(ActiveStatus("snap installed"))
 
 
