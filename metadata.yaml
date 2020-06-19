@@ -12,6 +12,8 @@ series:
 requires:
   db:
     interface: mysql
+  munge:
+    interface: munge
 provides:
   slurmdbd-host-port:
     interface: host-port

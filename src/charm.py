@@ -22,7 +22,7 @@ from slurm_snap_instance_manager import SlurmSnapInstanceManager
 
 from interface_host_port import HostPortProvides
 
-
+from interface_munge import MungeRequires
 
 logger = logging.getLogger()
 
@@ -39,9 +39,11 @@ class SlurmdbdCharm(CharmBase):
         self.slurm_snap = self.slurm_instance_manager_cls(self, "slurmdbd")
         self.fw_adapter = FrameworkAdapter(self.framework) 
         self.db = MySQLClient(self, "db")
+        self.munge = MungeRequires(self, "munge")
 
         event_handler_bindings = {
             self.db.on.database_available: self._on_database_available,
+            self.munge.on.munge_available: self._on_munge_available,
             self.on.install: self._on_install,
         }
         for event, handler in event_handler_bindings.items():
@@ -63,6 +65,18 @@ class SlurmdbdCharm(CharmBase):
             self.slurm_snap,
             self.fw_adapter,
         )
+    def _on_munge_available(self, event):
+        handle_munge_available(
+            event,
+            self.fw_adapter,
+            self.slurm_snap,
+        )
+
+
+def handle_munge_available(event, fw_adapter, slurm_snap):
+    slurm_snap.write_munge(event.munge.munge)
+    fw_adapter.set_unit_status(ActiveStatus("munge available"))
+
 
 
 def handle_install(event, fw_adapter, slurm_snap, dbd_provides):
@@ -72,7 +86,10 @@ def handle_install(event, fw_adapter, slurm_snap, dbd_provides):
     """
     slurm_snap.install()
     fw_adapter.set_unit_status(ActiveStatus("snap installed"))
-
+    
+    port = "6819"
+    protocol = "tcp"
+    run(["open-port", f"{port}{protocol}"])
 
 def handle_database_available(event, slurm_snap, fw_adapter):
     """Render the database details into the slurmdbd.yaml and
