@@ -72,8 +72,8 @@ class SlurmdbdCharm(CharmBase):
     def _on_database_available(self, event):
         handle_database_available(
             event,
-            self.slurm_snap,
             self.fw_adapter,
+            self._state,
         )
 
     def _on_munge_available(self, event):
@@ -122,7 +122,7 @@ def handle_munge_available(event, fw_adapter, slurm_snap, state):
     fw_adapter.set_unit_status(ActiveStatus("munge available"))
 
 
-def handle_database_available(event, slurm_snap, fw_adapter):
+def handle_database_available(event, fw_adapter, state):
     """Render the database details into the slurmdbd.yaml and
     set the snap.mode.
     """
@@ -139,7 +139,7 @@ def handle_database_available(event, slurm_snap, fw_adapter):
     #slurm_snap.set_snap_mode()
     #fw_adapter.set_unit_status(ActiveStatus("snap mode set"))
 
-    self._state.db_info = {
+    state.db_info = {
         'user': event.db_info.user,
         'password': event.db_info.password,
         'host': event.db_info.host,
