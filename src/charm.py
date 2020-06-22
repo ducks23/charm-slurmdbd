@@ -97,7 +97,7 @@ def handle_install(event, fw_adapter, slurm_snap, dbd_provides):
     run(["open-port", f"{port}{protocol}"])
 
 
-def handle_start(event, fw_adapter, slurm_snap, state)
+def handle_start(event, fw_adapter, slurm_snap, state):
     """Check to ensure we have the two things we need to
     successfully start slurmdbd; the munge_key from slurmctld,
     and the mysql db info.
