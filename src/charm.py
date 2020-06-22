@@ -100,7 +100,7 @@ def handle_install(event, fw_adapter, slurm_snap, dbd_provides):
 def handle_start(event, fw_adapter, slurm_snap, state):
     """Check to ensure we have the two things we need to
     successfully start slurmdbd; the munge_key from slurmctld,
-    and the mysql db info.
+    and the db_info from mysql.
 
     Set a blocked status if we don't have the munge_key and the db_info.
     """
