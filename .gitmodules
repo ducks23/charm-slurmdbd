@@ -1,3 +1,15 @@
 [submodule "mod/interface-mysql"]
 	path = mod/interface-mysql
 	url = git@github.com:ducks23/interface-mysql.git
+[submodule "src/src"]
+	path = src/src
+	url = https://github.com/omnivector-solutions/interface-munge
+[submodule "src/interface-munge"]
+	path = src/interface-munge
+	url = https://github.com/omnivector-solutions/interface-munge
+[submodule "src/slurm-snap-manager"]
+	path = src/slurm-snap-manager
+	url = git@github.com:omnivector-solutions/slurm-snap-manager.git
+[submodule "src/interface-host-port"]
+	path = src/interface-host-port
+	url = git@github.com:ducks23/ops-interface-host-port.git

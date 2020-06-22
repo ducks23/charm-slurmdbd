@@ -18,11 +18,11 @@ from adapters.framework import FrameworkAdapter
 
 from interface_mysql import MySQLClient
 
-from slurm_snap_instance_manager import SlurmSnapInstanceManager
+from slurm-snap-manager.slurm_snap_manager import SlurmSnapInstanceManager
 
-from interface_host_port import HostPortProvides
+from interface-host-port.interface_host_port import HostPortProvides
 
-from interface_munge import MungeRequires
+from interface-munge.interface_munge import MungeRequires
 
 logger = logging.getLogger()
 
