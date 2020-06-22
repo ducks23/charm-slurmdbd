@@ -3,6 +3,8 @@ import os
 import socket
 import subprocess
 
+from base64 import b64encode
+
 from pathlib import Path
 
 logger = logging.getLogger()
@@ -128,6 +130,11 @@ class SlurmSnapInstanceManager(Object):
             logger.error(
                 f"Could not install the slurm snap using the command: {e}", exc_info=True
             )
+
+    def write_munge_key(self, munge_key):
+        munge = b64decode(munge_key.encode())
+        f = open("/var/snap/slurm/common/etc/munge/munge.key", "wb")
+        f.write(munge)
 
     def write_config(self, context):
 
