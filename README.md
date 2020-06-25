@@ -10,16 +10,18 @@ Quickstart
 
 
 ```bash
-git submodule init
-git submodule update
-juju deploy .
+python3 -m venv venv
+source venv/bin/activate
+make build
+juju deploy ./slurmdbd.charm
 juju deploy mysql
 juju relate mysql:db slurmdbd:db
+juju relate slurmdbd:munge slurmdctld:munge
 ```
 There is also the option of supplying the Slurmdbd Charm with the slurm-snap as a resource to avoid downloading from the snapstore
 
 ```bash
-juju deploy . --resource slurm=/path/to/slurm_snap
+juju deploy ./slurmdbd.charm --resource slurm=/path/to/slurm_snap
 ```
 
 Contact
