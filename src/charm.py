@@ -128,18 +128,6 @@ def handle_database_available(event, fw_adapter, state):
     set the snap.mode.
     """
 
-    ## Render the slurmdbd config with data from the relation.
-    #slurm_snap.write_config({
-    #    'user': event.db_info.user,
-    #    'password': event.db_info.password,
-    #    'host': event.db_info.host,
-    #    'port': event.db_info.port,
-    #    'database': event.db_info.database,
-    #})
-    # Set the snap.mode
-    #slurm_snap.set_snap_mode()
-    #fw_adapter.set_unit_status(ActiveStatus("snap mode set"))
-
     state.db_info = {
         'user': event.db_info.user,
         'password': event.db_info.password,
