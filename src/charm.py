@@ -18,11 +18,11 @@ from adapters.framework import FrameworkAdapter
 
 from interface_mysql import MySQLClient
 
-from slurm-snap-manager.slurm_snap_manager import SlurmSnapInstanceManager
+from slurm_snap_manager import SlurmSnapInstanceManager
 
-from interface-host-port.interface_host_port import HostPortProvides
+from interface_host_port import HostPortProvides
 
-from interface-munge.interface_munge import MungeRequires
+from interface_munge import MungeRequires
 
 logger = logging.getLogger()
 
@@ -81,6 +81,7 @@ class SlurmdbdCharm(CharmBase):
             event,
             self.fw_adapter,
             self.slurm_snap,
+            self._state,
         )
 
 
@@ -94,7 +95,7 @@ def handle_install(event, fw_adapter, slurm_snap, dbd_provides):
     
     port = "6819"
     protocol = "tcp"
-    run(["open-port", f"{port}{protocol}"])
+    subprocess.run(["open-port", f"{port}{protocol}"])
 
 
 def handle_start(event, fw_adapter, slurm_snap, state):
@@ -117,7 +118,7 @@ def handle_start(event, fw_adapter, slurm_snap, state):
 
 
 def handle_munge_available(event, fw_adapter, slurm_snap, state):
-    slurm_snap.write_munge(event.munge.munge)
+    slurm_snap.write_munge_key(event.munge.munge)
     state.munge_key = event.munge.munge
     fw_adapter.set_unit_status(ActiveStatus("munge available"))
 

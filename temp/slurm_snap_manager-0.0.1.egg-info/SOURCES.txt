@@ -1,0 +1,7 @@
+README.md
+slurm_snap_manager/__init__.py
+slurm_snap_manager/slurm_snap_instance_manager.py
+slurm_snap_manager.egg-info/PKG-INFO
+slurm_snap_manager.egg-info/SOURCES.txt
+slurm_snap_manager.egg-info/dependency_links.txt
+slurm_snap_manager.egg-info/top_level.txt
