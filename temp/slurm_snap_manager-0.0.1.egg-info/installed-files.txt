@@ -1,8 +1,0 @@
-../slurm_snap_manager/slurm_snap_instance_manager.py
-../slurm_snap_manager/__init__.py
-../slurm_snap_manager/__pycache__/slurm_snap_instance_manager.cpython-36.pyc
-../slurm_snap_manager/__pycache__/__init__.cpython-36.pyc
-top_level.txt
-dependency_links.txt
-PKG-INFO
-SOURCES.txt

@@ -1,6 +1,0 @@
-README.md
-interface_host_port/__init__.py
-interface_host_port.egg-info/PKG-INFO
-interface_host_port.egg-info/SOURCES.txt
-interface_host_port.egg-info/dependency_links.txt
-interface_host_port.egg-info/top_level.txt
