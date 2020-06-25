@@ -3,6 +3,7 @@ import os
 import yaml
 import zipfile
 import pathlib
+
 def handle_package():
     """Handle the final package creation."""
     with pathlib.Path('metadata.yaml').open('rt', encoding='utf8') as fh:
