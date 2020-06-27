@@ -27,5 +27,5 @@ juju deploy ./slurmdbd.charm --resource slurm=/path/to/slurm_snap
 
 Contact
 -------
- - Author: Jesse <jesse@omnivector.solutions>
+ - Author: OmniVector Solutions 
  - Bug Tracker: [here](https://github.com/omnivector-solutions/charm-slurmdbd)

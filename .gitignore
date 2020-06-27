@@ -1,4 +1,5 @@
 venv/
 *.swp
 build/
+slurmdbd.charm
 __pychache__/
