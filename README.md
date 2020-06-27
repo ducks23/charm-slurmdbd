@@ -12,8 +12,8 @@ Quickstart
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-pip install pyyaml
-make build
+pip install charmcraft
+charmcraft build
 juju deploy ./slurmdbd.charm
 juju deploy mysql
 juju relate mysql:db slurmdbd:db

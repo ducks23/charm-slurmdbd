@@ -1,1 +1,5 @@
 ops
+git+https://github.com/omnivector-solutions/interface-munge.git@master
+git+https://github.com/omnivector-solutions/ops-interface-host-port.git@master
+git+https://github.com/omnivector-solutions/slurm-snap-manager.git@master
+git+https://github.com/omnivector-solutions/interface-mysql.git@master
