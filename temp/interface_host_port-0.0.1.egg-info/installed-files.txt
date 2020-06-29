@@ -1,6 +1,0 @@
-../interface_host_port/__init__.py
-../interface_host_port/__pycache__/__init__.cpython-36.pyc
-top_level.txt
-dependency_links.txt
-PKG-INFO
-SOURCES.txt
